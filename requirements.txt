@@ -1,0 +1,7 @@
+aiofiles==24.1.0
+asyncio==3.4.3
+asyncssh==2.19.0
+cffi==1.17.1
+cryptography==44.0.0
+pycparser==2.22
+typing_extensions==4.12.2
