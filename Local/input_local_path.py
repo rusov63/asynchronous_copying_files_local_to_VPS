@@ -51,7 +51,7 @@ async def get_local_path_user() -> None:
                 sys.exit()  # Завершение программы
 
             elif user_input == '0':
-                break  # Возвращаем результат сохраненный в PATH
+                break  # Возвращаем результат сохраненный в глобальной переменной class Path: local_user_paths
 
             elif '/' != user_input[0]:
                 # Работает быстрее, выполняет только одну операцию
@@ -59,8 +59,13 @@ async def get_local_path_user() -> None:
                 continue
 
             else:
-                # Проверяет существование пути и добавляет его в список отслеживаемых путей.
-                await check_path_file_folder(user_input)
+                # Проверяем результат выполнения check_path_file_folder
+                path_exists = await check_path_file_folder(user_input)
+                if not path_exists:
+                    continue  # Если путь не существует, продолжаем цикл
+
+            # Проверяет существование пути и добавляет его в список отслеживаемых путей.
+            await check_path_file_folder(user_input)
 
         except KeyboardInterrupt:
             print("\nПрерывание пользователем.")
@@ -70,8 +75,8 @@ async def get_local_path_user() -> None:
             print(f"Произошла ошибка: {e}")
             continue
 
-        # выводит количество добавленных файлов и папок, заключительная функция
-        await get_counts_folders_and_files()
+    # выводит количество добавленных файлов и папок, заключительная функция
+    await get_counts_folders_and_files()
 
 
 
