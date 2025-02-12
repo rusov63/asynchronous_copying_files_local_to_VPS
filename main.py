@@ -1,18 +1,25 @@
 import asyncio
 
-from connect import get_server_path_user, connect_to_server
+from Server.input_server_path import get_server_path_user
+from connect import connect_to_server
 from Local.input_local_path import get_local_path_user
+from create_folder_server import create_folder_on_server
 
 
 async def main():
-    await get_local_path_user() # получаем локальный путь от пользователя. Стартовая функция
-
+    await get_local_path_user()  # Получаем локальный путь от пользователя. Стартовая функция
     await asyncio.sleep(.5)
+    remote_path = await get_server_path_user()  # Получаем удаленный путь на сервере
 
+    await connect_to_server(remote_path)  # соединение с сервером, внутри функции создается папка для копирования файлов
 
-    path_folder = await get_server_path_user()  # удаленный путь на сервере
-    await connect_to_server(path_folder)  # соединение с сервером
+    # async with await connect_to_server(remote_path) as ssh:
+    #     await create_folder_on_server(ssh, remote_path)
 
 
 
 asyncio.run(main())
+
+
+# /home/rusov/PycharmProjects/
+# /hhh
