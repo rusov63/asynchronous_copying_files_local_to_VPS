@@ -42,13 +42,13 @@ async def get_local_path_user() -> None:
         try:
             user_input = input("Укажите путь: ").strip()
 
-            if not user_input:
+            if user_input.lower() == "exit":
+                print("Завершение программы.")
+                sys.exit()
+
+            elif not user_input.strip():
                 print("Путь не может быть пустым")
                 continue
-
-            elif user_input.lower() == "exit":
-                print("Завершение программы")
-                sys.exit()  # Завершение программы
 
             elif user_input == '0':
                 break  # Возвращаем результат сохраненный в глобальной переменной class Path: local_user_paths
