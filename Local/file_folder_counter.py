@@ -32,11 +32,11 @@ async def get_counts_folders_and_files() -> None:
 
     if counter.local_file > 0 or counter.local_dir > 0:
         print(f'Добавлено файлов: {counter.local_file}, папок: {counter.local_dir}')
-        print(local_user_paths.paths)
+        #print(local_user_paths.paths)
     elif counter.local_file == 0 and counter.local_dir == 0:
         print("""В результате операции не было добавлено ни одной папки или файла.
                  Операция завершена.""")
-        print(local_user_paths.paths)
+        #print(local_user_paths.paths)
         sys.exit()
     else:
         print("Не указано количество добавленных папок и файлов.")
