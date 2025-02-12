@@ -1,9 +1,8 @@
 import asyncio
 
 from Server.input_server_path import get_server_path_user
-from connect import connect_to_server
+from Server.connect import connect_to_server
 from Local.input_local_path import get_local_path_user
-from create_folder_server import create_folder_on_server
 
 
 async def main():
