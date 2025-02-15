@@ -2,7 +2,7 @@ import asyncio
 import sys
 import asyncssh
 from config import HOST, USERNAME, PASSWORD, ENCRYPTION_ALGS
-from create_folder_server import create_folder_on_server
+from Server.create_folder_server import create_folder_on_server
 
 async def connect_to_server(path_folder: str) -> None:
     """
