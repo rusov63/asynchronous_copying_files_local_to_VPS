@@ -27,7 +27,6 @@ class Path:
     append(path: str): Добавляет новый путь в список
      __contains__(path: str): Проверяет наличие пути в списке
     """
-
     def __init__(self) -> None:
         self.paths = []  # Список добавленных путей от пользователя
 
@@ -42,9 +41,10 @@ class Path:
         """
         Проверяет наличие пути в списке paths.
         Args: path (str): Путь для проверки
-        Returns: bool: True если путь найден в списке, False в противном случае
+        Returns:
+            bool: True если путь найден в списке, False в противном случае
         """
         return path in self.paths
 
 
-local_user_paths = Path()  # Создаем экземпляр класса
+stored_user_paths = Path()
