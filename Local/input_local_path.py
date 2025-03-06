@@ -1,17 +1,23 @@
 import sys
 
+import aioconsole
+
 from Local.check_path import check_path_file_folder
 from Local.file_folder_counter import get_counts_folders_and_files
 
 
-FIRST_MESSAGE = ("""Для копирования укажите абсолютный путь к директории (например, /home/my_papka/) 
-или файлу (/home/my_file.txt) локально, начиная с символа \"/\".\n""")
+FIRST_MESSAGE = (
+    "Для копирования укажите абсолютный путь к директории (например, /home/my_papka/)\n"
+    "или файлу (/home/my_file.txt) локально, начиная с символа \"/\".\n"
+)
 
-SECOND_MESSAGE = ("""После окончания добавления файлов, укажите - "0".
-Для отмены копирования наберите - "exit".\n""")
+SECOND_MESSAGE = (
+    "После окончания добавления файлов, укажите - \"0\".\n"
+    "Для отмены копирования наберите - \"exit\".\n"
+)
 
 
-async def get_local_path_user() -> None:
+async def get_user_input_path() -> None:
     """
     Асинхронная функция для получения и обработки путей к локальным файлам и директориям от пользователя.
 
@@ -21,7 +27,7 @@ async def get_local_path_user() -> None:
 
     Returns: None
 
-    Raises:
+    Ошибки:
         KeyboardInterrupt: При прерывании программы пользователем (Ctrl+C)
         Exception: При возникновении других ошибок во время выполнения
 
@@ -40,32 +46,28 @@ async def get_local_path_user() -> None:
     # Обрабатываем путь до тех пор, пока пользователь не введет "exit" или '0'
     while True:
         try:
-            user_input = input("Укажите путь: ").strip()
+            user_input = await aioconsole.ainput("Введите путь к файлу/папке: ").strip()
 
             if user_input.lower() == "exit":
                 print("Завершение программы.")
                 sys.exit()
 
-            elif not user_input.strip():
-                print("Путь не может быть пустым")
+            elif not user_input:
+                print("Ошибка: Путь не может быть пустым. Пожалуйста, введите корректный путь.")
                 continue
 
             elif user_input == '0':
                 break  # Возвращаем результат сохраненный в глобальной переменной class Path: local_user_paths
 
-            elif '/' != user_input[0]:
-                # Работает быстрее, выполняет только одну операцию
-                print("Неверный формат пути. Пример: /home/to/folder/")
+            elif user_input[0] != '/':
+                print("Ошибка: Неверный формат пути. Путь должен начинаться с символа '/'.")
                 continue
 
             else:
-                # Проверяем результат выполнения check_path_file_folder
+                # Проверяет существование пути
                 path_exists = await check_path_file_folder(user_input)
                 if not path_exists:
                     continue  # Если путь не существует, продолжаем цикл
-
-            # Проверяет существование пути и добавляет его в список отслеживаемых путей.
-            await check_path_file_folder(user_input)
 
         except KeyboardInterrupt:
             print("\nПрерывание пользователем.")
@@ -75,14 +77,5 @@ async def get_local_path_user() -> None:
             print(f"Произошла ошибка: {e}")
             continue
 
-    # выводит количество добавленных файлов и папок, заключительная функция
+    # выводит количество добавленных файлов и папок, заключительная корутина
     await get_counts_folders_and_files()
-
-
-
-
-
-
-# /home/rusov/PycharmProjects/asyncio_copying_files_server/
-# /home/rusov/PycharmProjects/asyncio_copying_files_server/readme.md
-# /home/rusov/PycharmProjects/
