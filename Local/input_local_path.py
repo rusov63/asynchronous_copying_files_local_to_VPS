@@ -46,9 +46,10 @@ async def get_user_input_path() -> None:
     # Обрабатываем путь до тех пор, пока пользователь не введет "exit" или '0'
     while True:
         try:
-            user_input = await aioconsole.ainput("Введите путь к файлу/папке: ").strip()
+            user_input = await aioconsole.ainput("Введите путь к файлу/папке: ")
+            user_input = user_input.strip().lower()
 
-            if user_input.lower() == "exit":
+            if user_input == "exit":
                 print("Завершение программы.")
                 sys.exit()
 
