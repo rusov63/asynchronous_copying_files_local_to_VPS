@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import os
 import asyncssh
 
 from config import HOST, PASSWORD, USERNAME, ENCRYPTION_ALGS
