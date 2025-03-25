@@ -1,35 +1,36 @@
 import asyncio
 import logging
-import sys
 import re
+from typing import Union
 
 import aioconsole
 import asyncssh
+from config import CANCELLED_MESSAGE, ERROR_MESSAGE, EXCEPTION_MESSAGE
+from logs.logger_config import setup_logger
+
+logger = setup_logger(__name__)
 
 
-# Настройка логирования
-logging.basicConfig(
-    filename='app_info.log',  # Имя файла для записи логов
-    filemode='a',              # Режим записи: 'a' для добавления
-    level=logging.INFO,        # Уровень логирования
-    format='%(asctime)s - %(levelname)s - %(message)s - %(name)s - %(filename)s:%(lineno)d'
-)
-
-FOLDER_PATH = '/my_folder'  # Путь по умолчанию
-EXIT_COMMAND = "exit"
+FOLDER_PATH: str = '/my_folder'  # Путь по умолчанию
+EXIT_COMMAND: str = "exit"
 
 
-FIRST_MESSAGE = (
+FIRST_MESSAGE: str = (
     f'\nДля копирования укажите путь к папке на сервере (по умолчанию путь {FOLDER_PATH}),\n'
     f'начиная с символа "/" (например, /home/my_papka/).'
 )
 
-SECOND_MESSAGE = (
-    "Для отмены копирования наберите - \"exit\".\n"
+SECOND_MESSAGE: str = "Для отмены наберите - \"exit\".\n"
+
+INVALID_PATH_MESSAGE: str = (
+    "Путь содержит недопустимые символы. "
+    "Используйте только английские буквы, подчеркивания и дефисы."
 )
 
 
-async def get_server_path_user() -> str:
+
+
+async def get_server_path_user() -> Union[str, bool]:
     """
     Асинхронная функция для получения и проверки пути к папке на сервере от пользователя.
 
@@ -39,17 +40,12 @@ async def get_server_path_user() -> str:
 
     Returns:
         str: Корректный путь к папке, введенный пользователем, или путь по умолчанию.
+        Bool: В случае ошибки или отмены операции
 
-    Exit:
-        sys.exit(): При вводе 'exit' происходит завершения программы.
-
-    Raises:
-        KeyboardInterrupt: При прерывании программы пользователем (Ctrl+C).
-        OSError: При ошибках, связанных с доступом к файловой системе.
-        CancelledError: При прерывании операции внешними факторами или системой.
-
-    Usage:
-        path = await get_server_path_user()
+    Errors:
+        asyncssh. Error: При ошибках SSH соединения
+        OSError: При системных ошибках
+        asyncio. CancelledError: При отмене операции
     """
 
     print(FIRST_MESSAGE)
@@ -63,69 +59,80 @@ async def get_server_path_user() -> str:
 
             # Завершение программы
             if user_input == EXIT_COMMAND:
-                logging.info("Прерывание пользователем.")
+                logger.info("Прерывание пользователем.")
                 print("Завершение программы.")
-                sys.exit()
+                return False
 
-            # Проверяем путь на пустую строку
+            # Проверяет являеться ли указанный путь допустимым.
             elif not user_input:
                 print("\nПуть не может быть пустым")
                 user = await aioconsole.ainput("Выбрать путь по умолчанию? (да, нет): ")
                 user = user.lower()
+
                 if user in ['да', '']:
                     print(f'Используется путь: {FOLDER_PATH}')
                     return FOLDER_PATH
                 else:
+                    logger.info('Пользователь не выбрал путь по умолчанию')
                     continue
 
-            # Проверяем начало пути с '/' или длину ввода не меньше или равно 3
-            elif '/' not in user_input[0] or len(user_input) <= 2:
-                print(f"Неверный формат пути. Пример: {FOLDER_PATH}")
-                continue
-
+            # Проверяет через регулярное выражение
             elif is_valid_path(user_input):
                 print(f'Путь корректен, введенный путь: {user_input}')
                 return user_input
             else:
-                print("Путь содержит недопустимые символы. "
-                      "Используйте только английские буквы, подчеркивания и дефисы.")
+                print(INVALID_PATH_MESSAGE)
                 continue
 
-        except KeyboardInterrupt:
-            print("\nПрерывание пользователем.")
-            sys.exit(1)
 
-        except (asyncssh.Error, OSError) as e:
-            print("\nОшибка при работе с папкой")
-            continue
+        except (asyncssh.Error, OSError, AttributeError) as e:
+            logger.error(f"Ошибка при работе с папкой: {str(e)}", exc_info=True)
+            print(ERROR_MESSAGE.format(e=e))
+            return False
 
         except asyncio.CancelledError:
-            print("\nОперация была отменена.")
-            sys.exit(1)
+            logger.warning(f"Операция была отменена пользователем", exc_info=True)
+            print(CANCELLED_MESSAGE)
+            return False
 
         except Exception as e:
-            print(f"\nПроизошла ошибка: {e}")
-            continue
-
+            logger.error(f"Неожиданная ошибка: {str(e)}", exc_info=True)
+            print(EXCEPTION_MESSAGE.format(e=e))
+            return False
 
 
 def is_valid_path(path: str) -> bool:
     """
     Проверяет, является ли указанный путь допустимым.
 
-    Функция использует регулярное выражение для проверки того,
-    что путь состоит только из разрешённых символов: английских букв,
-    подчеркиваний, дефисов, цифр, а также флеш.
+    Путь считается допустимым, если он соответствует определенному шаблону,
+    начинается с '/' и содержит только разрешенные символы. Также проверяется,
+    что длина пути находится в пределах от 3 до 30 символов.
 
-    Args:
+    :arg
         path (str): Путь, который необходимо проверить.
 
-    Returns:
+    :return
         bool: True, если путь корректен, иначе False.
 
-    Example:
-        is_valid_path("/home/user/documents")  # Вернёт True
-        is_valid_path("home/user/documents")    # Вернёт False
+    :exception
+        Если путь недопустим, выводится сообщение об ошибке с указанием причины.
+        Is_valid_path("/home/user/documents")  # Вернёт True
+        is_valid_path("home/user/documentы")  # Вернёт False
     """
-    pattern = r'^[a-zA-Z0-9/_-]+$'
-    return bool(re.match(pattern, path))
+    pattern = r'^/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*/?$'
+
+    if '/' not in path[0]:
+        print(f"Неверный формат пути. Пример: {FOLDER_PATH}")
+        return False
+
+    if 30 <= len(path) <= 2:
+        print(f"Путь слишком короткий. Пример: {FOLDER_PATH}")
+        return False
+
+    if not re.match(pattern, path):
+        print("Путь содержит недопустимые символы")
+        return False
+
+    return True
+
