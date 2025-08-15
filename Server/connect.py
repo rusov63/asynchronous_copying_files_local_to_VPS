@@ -1,10 +1,13 @@
 import asyncio
 import sys
+
 import asyncssh
 from config import HOST, USERNAME, PASSWORD, ENCRYPTION_ALGS
 from Server.create_folder_server import create_folder_on_server
+from copy_file import get_file_transfer_paths
 
-async def connect_to_server(path_folder: str) -> None:
+
+async def connect_to_server(remote_path: str) -> None:
     """
     Устанавливает SSH-подключение к удаленному серверу и создает папку.
 
@@ -29,9 +32,6 @@ async def connect_to_server(path_folder: str) -> None:
 
     Возвращает: None
     """
-    if not HOST or not PASSWORD or not USERNAME:
-        print(f"Ошибка: учетные данные не заданы")
-        sys.exit(1)
 
     max_retries = 5  # Максимальное количество попыток
     delay = 2  # Начальная задержка в секундах
@@ -41,7 +41,7 @@ async def connect_to_server(path_folder: str) -> None:
         print(f"\nПодключение к {HOST}")
 
         try:
-            # Устанавливаем SSH-подключение через контекстный менеджер, к удаленному серверу и выполняем команду
+            # Устанавливаем SSH-подключение через контекстный менеджер к удаленному серверу
             async with asyncssh.connect(
                     host=HOST,
                     username=USERNAME,
@@ -49,8 +49,14 @@ async def connect_to_server(path_folder: str) -> None:
                     encryption_algs=ENCRYPTION_ALGS
             ) as ssh:
                 print(f"Успешное подключение к {HOST}")
-                success = await create_folder_on_server(ssh, path_folder)
-                return success
+
+                # 4. Создаем папку для копирования файлов
+                result = await create_folder_on_server(ssh, remote_path)
+                if not result:
+                    return False
+
+                # 5.
+                await get_file_transfer_paths(ssh, remote_path)  # передаем ssh, удаленный путь
 
 
         except asyncssh.misc.PermissionDenied:
@@ -77,27 +83,3 @@ async def connect_to_server(path_folder: str) -> None:
 
     # попытки исчерпаны и подключение не удалось
     sys.exit(1)
-
-
-
-# while max_retries > 0:
-#     try:
-#         return await asyncssh.connect(
-#             host=HOST,
-#             username=USERNAME,
-#             password=PASSWORD,
-#             encryption_algs=ENCRYPTION_ALGS
-#         )
-#     except asyncssh.misc.PermissionDenied:
-#         print("Нет прав для подключения к серверу")
-#         sys.exit(1)
-#     except (asyncssh.Error, OSError) as e:
-#         print(f'Ошибка подключения: {e}')
-#         max_retries -= 1
-#         if max_retries > 0:
-#             print(f'Повторная попытка через {delay} секунд')
-#             await asyncio.sleep(delay)
-#             delay *= 2
-#         else:
-#             print("Максимальное количество попыток исчерпано.")
-#             sys.exit(1)
